@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+// 新添加的注释
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
