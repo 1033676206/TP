@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/test_hzh?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8  # 新增字符编码参数
+    username: root
+    password: root
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1GB
+      max-request-size: 2GB
+
+  # 新增MyBatis配置（驼峰命名和下划线自动转换）
+  mybatis:
+    configuration:
+      map-underscore-to-camel-case: true  # 自动将下划线字段映射到驼峰属性
+      use-generated-keys: true            # 允许自动生成主键
+    type-aliases-package: com.example.entity
+
+server:
+  port: 8080
+  tomcat:
+    max-http-post-size: 2GB
+    max-swallow-size: 2GB
+
+  # 新增Thymeleaf模板引擎配置（确保HTML使用UTF-8）
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+    servlet:
+      content-type: text/html;charset=UTF-8  # 显式设置响应编码
+
+  # 新增
+  remote:
+    sensing:
+      apiUrl: https://api.example.com/remote-sensing
+      downloadPath: /path/to/download

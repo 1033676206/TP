@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遥感影像管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            text-align: center;
+        }
+        input, button {
+            margin: 5px;
+            padding: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>遥感影像管理</h2>
+
+    <!-- 上传影像 -->
+    <h3>上传影像</h3>
+    <input type="text" id="imageName" placeholder="影像名称 *" required>
+    <input type="text" id="imageDescription" placeholder="影像描述">
+    <input type="text" id="categoryName" placeholder="分类名称 *" required>
+    <input type="text" id="region" placeholder="所属地区 *" required>
+    <input type="datetime-local" id="publishTime" placeholder="发布时间 *" required>
+    <input type="file" id="imageFile">
+    <button onclick="uploadImage()">上传</button>
+    <p id="uploadMessage"></p>
+
+    <!-- 查询影像 -->
+    <h3>查询影像</h3>
+    <input type="text" id="searchName" placeholder="请输入影像名称">
+    <button onclick="searchImage()">查询</button>
+    <p id="searchResult"></p>
+
+    <!-- 影像列表 -->
+    <h3>影像列表</h3>
+    <button onclick="fetchImages()">刷新列表</button>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>名称</th>
+            <th>分类</th>
+            <th>地区</th>
+            <th>发布时间</th>
+            <th>文件路径</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="imageList"></tbody>
+    </table>
+</div>
+
+<script>
+    const API_URL = "http://localhost:8080/api/images";
+
+    // 1. 上传影像（适配新字段）
+    function uploadImage() {
+        const name = document.getElementById("imageName").value;
+        const description = document.getElementById("imageDescription").value;
+        const categoryName = document.getElementById("categoryName").value;
+        const region = document.getElementById("region").value;
+        const publishTime = document.getElementById("publishTime").value;
+        const file = document.getElementById("imageFile").files[0];
+
+        if (!name || !categoryName || !region || !publishTime || !file) {
+            alert("请填写所有必填字段（带 * 号）并选择文件！");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("name", name);
+        formData.append("description", description);
+        formData.append("categoryName", categoryName);
+        formData.append("region", region);
+        formData.append("publishTime", publishTime);
+        formData.append("file", file);
+
+        fetch(API_URL + "/upload", {
+            method: "POST",
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("上传失败");
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById("uploadMessage").innerText = "上传成功！ID：" + data.id;
+                fetchImages();
+            })
+            .catch(error => {
+                document.getElementById("uploadMessage").innerText = error.message;
+                console.error("上传失败:", error);
+            });
+    }
+
+    // 2. 获取所有影像列表（新增字段展示）
+    function fetchImages() {
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(images => {
+                const imageList = document.getElementById("imageList");
+                imageList.innerHTML = "";
+                images.forEach(image => {
+                    imageList.innerHTML += `
+                        <tr>
+                            <td>${image.id}</td>
+                            <td>${image.name}</td>
+                            <td>${image.categoryName}</td>
+                            <td>${image.region}</td>
+                            <td>${image.publishTime}</td>
+                            <td>${image.filePath}</td>
+                            <td><button onclick="deleteImage('${image.name}')">删除</button></td>
+                        </tr>
+                    `;
+                });
+            })
+            .catch(error => console.error("获取影像列表失败:", error));
+    }
+
+    // 3. 按名称查询影像（新增字段展示）
+    function searchImage() {
+        const name = document.getElementById("searchName").value;
+        if (!name) {
+            alert("请输入影像名称！");
+            return;
+        }
+
+        fetch(API_URL + "/search?name=" + encodeURIComponent(name))
+            .then(response => {
+                if (!response.ok) throw new Error("影像不存在");
+                return response.json();
+            })
+            .then(image => {
+                const result = `
+                    名称: ${image.name}<br>
+                    分类: ${image.categoryName}<br>
+                    地区: ${image.region}<br>
+                    发布时间: ${image.publishTime}<br>
+                    路径: ${image.filePath}
+                `;
+                document.getElementById("searchResult").innerHTML = result;
+            })
+            .catch(error => {
+                document.getElementById("searchResult").innerText = "未找到影像";
+                console.error(error);
+            });
+    }
+
+    // 4. 删除影像（保持不变）
+    function deleteImage(name) {
+        if (!confirm(`确定删除影像 "${name}" 吗？`)) return;
+
+        fetch(API_URL + "/delete?name=" + encodeURIComponent(name), {
+            method: "DELETE"
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert("影像删除成功！");
+                    fetchImages();
+                } else {
+                    alert("删除失败，影像可能不存在");
+                }
+            })
+            .catch(error => console.error("删除影像失败:", error));
+    }
+
+    // 页面加载时获取影像列表
+    fetchImages();
+</script>
+
+</body>
+</html>
